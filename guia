@@ -1,0 +1,10 @@
+ 1991  composer require logger
+ 1992  composer require symfony/orm-pack
+ 1993  composer require --dev symfony/maker-bundle
+ 1994  composer require "lexik/jwt-authentication-bundle"
+ 1995  mkdir -p config/jwt
+ 1996  openssl genpkey -out config/jwt/private.pem -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096
+ 1997  openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout
+
+php bin/console security:encode password
+
