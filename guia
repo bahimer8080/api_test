@@ -8,3 +8,4 @@
 
 php bin/console security:encode password
 
+ php bin/console make:migration
