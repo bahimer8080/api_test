@@ -25,9 +25,9 @@ namespace App\Controller;
 class TaskController extends AbstractController
 {
     /**
-     * @Route("/getMyTask")
+     * @Route("/task/{board_id}",methods={"GET","HEAD"})
      */
-    public function getMyTask(Request $request, 
+    public function index(int $board_id,Request $request, 
     EntityManagerInterface $em,
     BoardRepository $Board,
     MemberRepository $Member,
@@ -37,13 +37,13 @@ class TaskController extends AbstractController
     UserPasswordEncoderInterface $encoder){
         $userId = $userToken->getId();
         $board = $Member->findBy([
-            "board" => $request->query->get("board_id"),
+            "board" =>  $board_id,
             "user" => $userId,
             "role" => 1
         ]);
         $response = new JsonResponse();
         if( count( $board ) > 0 ){
-            $tasks = $Task->findBy([ "board" => $request->query->get("board_id") ]);
+            $tasks = $Task->findBy([ "board" =>  $board_id ]);
             $tasksArray = [];
             foreach($tasks as $t){
                 $tasksArray[] = [
@@ -61,9 +61,9 @@ class TaskController extends AbstractController
 
 
     /**
-     * @Route("/getMyAssignedTask")
+     * @Route("/taskAssigned")
      */
-    public function getMyAssignedTask(Request $request, 
+    public function taskAssigned(Request $request, 
     EntityManagerInterface $em,
     BoardRepository $Board,
     MemberRepository $Member,
@@ -120,9 +120,9 @@ class TaskController extends AbstractController
         }
 
     /**
-     * @Route("/updateTask",methods={"PUT","HEAD"})
+     * @Route("/task/{task_id}",methods={"PUT","HEAD"})
      */
-    public function updateTask(Request $request, 
+    public function update(int $task_id,Request $request, 
     EntityManagerInterface $em,
     BoardRepository $Board,
     MemberRepository $Member,
@@ -131,7 +131,7 @@ class TaskController extends AbstractController
     UserPasswordEncoderInterface $encoder){
         $userId = $userToken->getId();
         $task = $Task->findBy([
-            "id" => $request->query->get("task_id")
+            "id" => $task_id
         ]);
         $response = new JsonResponse();
         if( count( $task ) > 0 ){
@@ -142,7 +142,7 @@ class TaskController extends AbstractController
             ]);
             if( count( $board ) > 0 ){
                 $entityManager = $this->getDoctrine()->getManager();
-                $tsk = $entityManager->getRepository(Task::class)->find($request->query->get("task_id"));
+                $tsk = $entityManager->getRepository(Task::class)->find($task_id);
 
                 if (!$tsk) {
                     return $response->setData([ "TASK NOT UPDATED", "status" => false ]);
@@ -160,10 +160,10 @@ class TaskController extends AbstractController
 
 
     /**
-    * @Route("/deleteTask",methods={"DELETE","HEAD"})
+    * @Route("/task/{task_id}",methods={"DELETE","HEAD"})
     */
 
-    public function deleteTask(Request $request, 
+    public function delete(int $task_id,Request $request, 
     EntityManagerInterface $em,
     BoardRepository $Board,
     MemberRepository $Member,
@@ -173,7 +173,7 @@ class TaskController extends AbstractController
         $response = new JsonResponse();
         $userId = $userToken->getId();
         $task = $Task->findBy([
-            "id" => $request->query->get("task_id")
+            "id" => $task_id
         ]);
         
         if( count( $task ) > 0 ){
@@ -184,7 +184,7 @@ class TaskController extends AbstractController
             ]);
             if( count( $board ) > 0 ){
                 $entityManager = $this->getDoctrine()->getManager();
-                $tsk = $entityManager->getRepository(Task::class)->find($request->query->get("task_id"));
+                $tsk = $entityManager->getRepository(Task::class)->find($task_id);
 
                 if (!$tsk) {
                     return $response->setData([ "TASK NOT DELETE", "status" => false ]);
@@ -203,9 +203,9 @@ class TaskController extends AbstractController
     }
 
     /**
-     * @Route("/assignTask",methods={"PUT","HEAD"})
+     * @Route("/assignTask/{task_id}/{user_id}",methods={"PUT","HEAD"})
      */
-    public function assignTask(Request $request, 
+    public function assignTask(int $task_id,int $user_id,Request $request, 
     EntityManagerInterface $em,
     BoardRepository $Board,
     MemberRepository $Member,
@@ -215,7 +215,7 @@ class TaskController extends AbstractController
     UserPasswordEncoderInterface $encoder){
         $userId = $userToken->getId();
         $task = $Task->findBy([
-            "id" => $request->query->get("task_id")
+            "id" => $task_id
         ]);
         $response = new JsonResponse();
         if( count( $task ) > 0 ){
@@ -226,12 +226,12 @@ class TaskController extends AbstractController
             ]);
             if( count( $board ) > 0 ){
                 $entityManager = $this->getDoctrine()->getManager();
-                $tsk = $entityManager->getRepository(Task::class)->find($request->query->get("task_id"));
+                $tsk = $entityManager->getRepository(Task::class)->find($task_id);
 
                 if (!$tsk) {
                     return $response->setData([ "USER NOT ASSIGNED", "status" => false ]);
                 }
-                $us = $User->findBy([ "id" => $request->query->get("task_id") ]);
+                $us = $User->findBy([ "id" => $user_id ]);
                 $tsk->setUser($us[0]);
                 $entityManager->flush();
                 return $response->setData(["message" => "USER ASSIGNED SUCCESSFULLY", "status" => true ] );
@@ -242,9 +242,9 @@ class TaskController extends AbstractController
     }
 
     /**
-     * @Route("/changeStateTask",methods={"PUT","HEAD"})
+     * @Route("/changeStateTask/{task_id}/{state}",methods={"PUT","HEAD"})
      */
-    public function changeStateTask(Request $request, 
+    public function changeStateTask(int $task_id,int $state,Request $request, 
     EntityManagerInterface $em,
     BoardRepository $Board,
     MemberRepository $Member,
@@ -254,7 +254,7 @@ class TaskController extends AbstractController
     UserPasswordEncoderInterface $encoder){
         $userId = $userToken->getId();
         $task = $Task->findBy([
-            "id" => $request->query->get("task_id")
+            "id" => $task_id
         ]);
         $response = new JsonResponse();
         if( count( $task ) > 0 ){
@@ -264,13 +264,12 @@ class TaskController extends AbstractController
             ]);
             if( count( $board ) > 0 ){
                 $entityManager = $this->getDoctrine()->getManager();
-                $tsk = $entityManager->getRepository(Task::class)->find($request->query->get("task_id"));
+                $tsk = $entityManager->getRepository(Task::class)->find($task_id);
 
                 if (!$tsk) {
                     return $response->setData([ "STATE NOT CHANGE", "status" => false ]);
                 }
-                $us = $User->findBy([ "id" => $request->query->get("user_id") ]);
-                $tsk->setState($request->query->get("state"));
+                $tsk->setState($state);
                 $entityManager->flush();
                 return $response->setData(["message" => "STATE CHANGE SUCCESSFULLY", "status" => true ] );
             }

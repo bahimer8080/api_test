@@ -23,9 +23,9 @@ namespace App\Controller;
 class BoardController extends AbstractController
 {
     /**
-     * @Route("/getBoardAll")
+     * @Route("/board",methods={"GET","HEAD"})
      */
-    public function getBoardAll(Request $request, 
+    public function index(Request $request, 
     EntityManagerInterface $em,
     BoardRepository $Board,
     MemberRepository $Member,
@@ -40,9 +40,8 @@ class BoardController extends AbstractController
         $memberArray = [];
         foreach($member as $m){
             $memberArray[] = [
-                "user_id" => $m->getUser()->getId(),
-                "board_id" => $m->getBoard()->getId(),
-                "board_name" => $m->getBoard()->getName()
+                "id" => $m->getBoard()->getId(),
+                "name" => $m->getBoard()->getName()
             ];
         }
 
@@ -52,9 +51,9 @@ class BoardController extends AbstractController
 
 
     /**
-     * @Route("/getBoardById")
+     * @Route("/board/{id}",methods={"GET","HEAD"})
      */
-    public function getById(Request $request, 
+    public function show(int $id,Request $request, 
         EntityManagerInterface $em,
         BoardRepository $Board,
         MemberRepository $Member,
@@ -62,22 +61,25 @@ class BoardController extends AbstractController
         UserPasswordEncoderInterface $encoder){
         $userId = $userToken->getId();
         $board = $Member->findBy([
-            "id" => $request->query->get("id"),
+            "id" => $id,//$request->query->get("id"),
             "user" => $userId
         ]);
-        $boardArray = [
-            "id" => $board[0]->getBoard()->getId(),
-            "name" => $board[0]->getBoard()->getName()
-        ];
-
         $response = new JsonResponse();
-        return $response->setData($boardArray);
+        if( count( $board ) > 0 ){
+            $boardArray = [
+                "id" => $board[0]->getBoard()->getId(),
+                "name" => $board[0]->getBoard()->getName()
+            ];
+            return $response->setData($boardArray);
+        } else {
+            return $response->setData([ "message" => "BOARD NOT FOUND", "state" => false ]);
+        }
     }
 
     /**
-     * @Route("/createBoard",methods={"POST","HEAD"})
+     * @Route("/board",methods={"POST","HEAD"})
      */
-    public function createBoard(Request $request, 
+    public function store(Request $request, 
         EntityManagerInterface $em,
         BoardRepository $Board,
         MemberRepository $Member,
@@ -103,9 +105,9 @@ class BoardController extends AbstractController
         }
 
     /**
-     * @Route("/updateBoard",methods={"PUT","HEAD"})
+     * @Route("/board/{id}",methods={"PUT"})
      */
-    public function updateBoard(Request $request, 
+    public function edit(int $id,Request $request, 
     EntityManagerInterface $em,
     BoardRepository $Board,
     MemberRepository $Member,
@@ -113,28 +115,36 @@ class BoardController extends AbstractController
     UserPasswordEncoderInterface $encoder){
         $userId = $userToken->getId();
         $board = $Member->findBy([
-            "board" => $request->query->get("id"),
+            "board" => $id,
             "user" => $userId
         ]);
 
-        $entityManager = $this->getDoctrine()->getManager();
-        $boardUpd = $entityManager->getRepository(Board::class)->find($board[0]->getBoard()->getId());
+        $response = new JsonResponse();
+        if(count($board) > 0){
+            $entityManager = $this->getDoctrine()->getManager();
+            $boardUpd = $entityManager->getRepository(Board::class)->find($board[0]->getBoard()->getId());
 
-        if (!$boardUpd) {
-            return $response->setData([ "BOARD NOT UPDATED", "status" => false ]);
+            if (!$boardUpd) {
+                return $response->setData([ "BOARD NOT UPDATED", "status" => false ]);
+            }
+
+            $boardUpd->setName($request->toArray()["name"]);
+            $entityManager->flush();
+            return $response->setData([ "BOARD UPDATED SUCCESSFULLY", "status" => true ]);
+        } else {
+            
+            return $response->setData([ "BOARD NOT FOUND", "status" => true ]);
         }
 
-         $boardUpd->setName($request->toArray()["name"]);
-         $entityManager->flush();
+        
 
-        $response = new JsonResponse();
-        return $response->setData([ "BOARD UPDATED SUCCESSFULLY", "status" => true ]);
+        
     }
 
     /**
-     * @Route("/deleteBoard",methods={"DELETE","HEAD"})
+     * @Route("/board/{id}",methods={"DELETE","HEAD"})
      */
-    public function deleteBoard(Request $request, 
+    public function delete(int $id,Request $request, 
     EntityManagerInterface $em,
     BoardRepository $Board,
     MemberRepository $Member,
@@ -142,22 +152,30 @@ class BoardController extends AbstractController
     UserPasswordEncoderInterface $encoder){
         $userId = $userToken->getId();
         $board = $Member->findBy([
-            "board" => $request->query->get("id"),
+            "board" => $id,
             "user" => $userId
         ]);
 
-        $entityManager = $this->getDoctrine()->getManager();
-        $boardUpd = $entityManager->getRepository(Board::class)->find($board[0]->getBoard()->getId());
-
-        if (!$boardUpd) {
-            return $response->setData([ "BOARD NOT UPDATED", "status" => false ]);
-        }
-
-         $entityManager->remove($boardUpd);
-         $entityManager->flush();
 
         $response = new JsonResponse();
-        return $response->setData([ "BOARD DELETE SUCCESSFULLY", "status" => true ]);
+        if(count( $board ) > 0){
+            $entityManager = $this->getDoctrine()->getManager();
+            $boardUpd = $entityManager->getRepository(Board::class)->find($board[0]->getBoard()->getId());
+
+            if (!$boardUpd) {
+                return $response->setData([ "BOARD NOT DELETED", "status" => false ]);
+            }
+
+            $entityManager->remove($boardUpd);
+            $entityManager->flush();
+            return $response->setData([ "BOARD DELETE SUCCESSFULLY", "status" => true ]);
+        } else {
+            return $response->setData([ "BOARD NOT FOUND", "status" => false ]);
+        }
+
+        
+
+        
     }
 
     /**
